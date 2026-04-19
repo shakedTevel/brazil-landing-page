@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --tevel-navy: #1B2A4A;
+  --tevel-navy-light: #243659;
+  --tevel-amber: #D4851C;
+  --tevel-amber-light: #E89C35;
+  --tevel-blue: #0693e3;
+  --tevel-green: #00d084;
+  --tevel-gray: #F5F7FA;
+  --tevel-gray-mid: #E8ECF2;
+  --tevel-text: #1A1A2E;
+  --tevel-text-muted: #6B7280;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-navy: var(--tevel-navy);
+  --color-navy-light: var(--tevel-navy-light);
+  --color-amber: var(--tevel-amber);
+  --color-amber-light: var(--tevel-amber-light);
+  --color-tevel-blue: var(--tevel-blue);
+  --color-tevel-green: var(--tevel-green);
+  --color-tevel-gray: var(--tevel-gray);
+  --color-tevel-text: var(--tevel-text);
+  --color-tevel-muted: var(--tevel-text-muted);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.24), transparent 34%),
+    linear-gradient(135deg, var(--tevel-blue) 0%, var(--tevel-green) 100%);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--tevel-text);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.tevel-page {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.22), transparent 26%),
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, var(--tevel-blue) 0%, var(--tevel-green) 100%);
+}
+
+.tevel-mesh {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.28), transparent 24%),
+    radial-gradient(circle at 80% 12%, rgba(255, 255, 255, 0.18), transparent 18%),
+    radial-gradient(circle at 68% 80%, rgba(255, 255, 255, 0.12), transparent 22%);
+  opacity: 0.9;
 }

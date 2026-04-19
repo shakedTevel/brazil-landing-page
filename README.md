@@ -1,5 +1,21 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## SMTP Relay Setup
+
+The contact form submits through a server action and sends mail through an SMTP relay.
+
+1. Copy `.env.example` to `.env.local`
+2. Fill in your relay credentials and destination inbox
+3. Restart the dev server after changing env vars
+
+Environment variables:
+
+- `SMTP_HOST`: Relay hostname
+- `SMTP_PORT`: Relay port such as `587` or `465`
+- `SMTP_SECURE`: Use `true` for implicit TLS, usually `465`; use `false` for STARTTLS or plain upgrade, usually `587`
+- `SMTP_FROM`: Sender address shown on outbound mail
+- `CONTACT_FORM_TO`: Inbox that receives website leads
+
 ## Getting Started
 
 First, run the development server:
