@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import nodemailer from 'nodemailer'
 
 export type ContactSubmission = {
@@ -6,14 +8,22 @@ export type ContactSubmission = {
   country: string
   phone: string
   notes?: string
+  testCapturePath?: string
 }
 
 type SmtpConfig = {
   host: string
   port: number
   secure: boolean
+  requireTls: boolean
   from: string
   to: string
+  user?: string
+  pass?: string
+  tlsServername?: string
+  connectionTimeout: number
+  greetingTimeout: number
+  socketTimeout: number
 }
 
 function getRequiredEnv(name: string) {
@@ -25,24 +35,74 @@ function getRequiredEnv(name: string) {
   return value
 }
 
+function getOptionalEnv(name: string) {
+  const value = process.env[name]?.trim()
+  return value || undefined
+}
+
+function getBooleanEnv(name: string, fallback = false) {
+  const value = getOptionalEnv(name)
+
+  if (!value) {
+    return fallback
+  }
+
+  return value === 'true'
+}
+
+function getNumberEnv(name: string, fallback: number) {
+  const value = getOptionalEnv(name)
+
+  if (!value) {
+    return fallback
+  }
+
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a valid positive number`)
+  }
+
+  return parsed
+}
+
 function getSmtpConfig(): SmtpConfig {
   const host = getRequiredEnv('SMTP_HOST')
   const portRaw = getRequiredEnv('SMTP_PORT')
   const from = getRequiredEnv('SMTP_FROM')
   const to = getRequiredEnv('CONTACT_FORM_TO')
-  const secure = process.env.SMTP_SECURE?.trim() === 'true'
+  const secure = getBooleanEnv('SMTP_SECURE')
+  const requireTls = getBooleanEnv('SMTP_REQUIRE_TLS', !secure && portRaw === '587')
+  const user = getOptionalEnv('SMTP_USER')
+  const pass = getOptionalEnv('SMTP_PASS')
+  const tlsServername = getOptionalEnv('SMTP_TLS_SERVERNAME')
   const port = Number(portRaw)
 
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error('SMTP_PORT must be a valid positive integer')
   }
 
+  if (secure && port !== 465) {
+    throw new Error('SMTP_SECURE should only be true for port 465. Use SMTP_SECURE=false for ports 25 or 587.')
+  }
+
+  if ((user && !pass) || (!user && pass)) {
+    throw new Error('SMTP_USER and SMTP_PASS must either both be set or both be omitted')
+  }
+
   return {
     host,
     port,
     secure,
+    requireTls,
     from,
     to,
+    user,
+    pass,
+    tlsServername,
+    connectionTimeout: getNumberEnv('SMTP_CONNECTION_TIMEOUT_MS', 15_000),
+    greetingTimeout: getNumberEnv('SMTP_GREETING_TIMEOUT_MS', 15_000),
+    socketTimeout: getNumberEnv('SMTP_SOCKET_TIMEOUT_MS', 30_000),
   }
 }
 
@@ -51,6 +111,21 @@ function createTransport(config: SmtpConfig) {
     host: config.host,
     port: config.port,
     secure: config.secure,
+    requireTLS: config.requireTls,
+    auth: config.user && config.pass
+      ? {
+          user: config.user,
+          pass: config.pass,
+        }
+      : undefined,
+    connectionTimeout: config.connectionTimeout,
+    greetingTimeout: config.greetingTimeout,
+    socketTimeout: config.socketTimeout,
+    tls: config.tlsServername
+      ? {
+          servername: config.tlsServername,
+        }
+      : undefined,
   })
 }
 
@@ -122,7 +197,35 @@ function buildHtmlBody(submission: ContactSubmission) {
   `.trim()
 }
 
+async function writeTestSubmission(submission: ContactSubmission) {
+  const outputFile = submission.testCapturePath?.trim() || process.env.CONTACT_FORM_TEST_OUTPUT_FILE?.trim()
+
+  if (!outputFile) {
+    return false
+  }
+
+  await mkdir(dirname(outputFile), { recursive: true })
+  await writeFile(
+    outputFile,
+    JSON.stringify(
+      {
+        ...submission,
+        sentAt: new Date().toISOString(),
+      },
+      null,
+      2
+    ),
+    'utf8'
+  )
+
+  return true
+}
+
 export async function sendContactEmail(submission: ContactSubmission) {
+  if (await writeTestSubmission(submission)) {
+    return
+  }
+
   const config = getSmtpConfig()
   const transport = createTransport(config)
   const subject = `New Tevel contact inquiry from ${submission.fullName}`

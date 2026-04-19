@@ -23,6 +23,7 @@ export async function submitContact(
   const country = (formData.get('country') as string)?.trim()
   const phone = (formData.get('phone') as string)?.trim()
   const notes = (formData.get('notes') as string)?.trim()
+  const testCapturePath = (formData.get('__testCapturePath') as string)?.trim()
 
   const errors: ContactFormState['errors'] = {}
 
@@ -46,6 +47,7 @@ export async function submitContact(
       country,
       phone,
       notes,
+      testCapturePath,
     })
   } catch (error) {
     console.error('Failed to send contact form email', error)
